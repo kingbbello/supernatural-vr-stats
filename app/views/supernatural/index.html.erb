@@ -1,0 +1,11 @@
+<h1>Supernatural Stats</h1>
+
+<% if @error %>
+  <p>Error: <%= @error %></p>
+<% else %>
+  <ul>
+    <% @data.each do |stat| %>
+      <li><%= stat %></li>
+    <% end %>
+  </ul>
+<% end %>
