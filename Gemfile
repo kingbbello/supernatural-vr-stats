@@ -64,3 +64,5 @@ end
 
 gem "httparty"
 gem "http"
+
+gem "chartkick"
