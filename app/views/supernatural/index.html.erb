@@ -1,12 +1,115 @@
-
 <div class="container mt-2">
+  <h1>Supernatural Stats</h1>
   <div class="row">
-    <h1>Supernatural Stats</h1>
-    <%= line_chart [
-      {name: "Accuracy", data: @sorted_workouts.transform_values { |v| v[:accuracy_percentage].to_f }, min: @min_percentage},
-      {name: "Power", data: @sorted_workouts.transform_values { |v| v[:power_percentage].to_f }, min: @min_percentage},
-      {name: "Total Time (minutes)", data: @sorted_workouts.transform_values { |v| v[:total_time] / (1000.0 * 60.0) }, min: @min_time}
-    ], height: "500px" %>
+    <div class="card">
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <%= select_tag :days_range, 
+                options_for_select([['Last 7 days', 7], ['Last 30 days', 30], ['Last 90 days', 90]], 7),
+                class: 'form-select',
+                id: 'days-range-select' %>
+          </div>
+          <div class="col-md-3">
+            <%= select_tag :metric, 
+                options_for_select([
+                  ['Accuracy', 'accuracy'],
+                  ['Power', 'power'],
+                  ['Total Time', 'time']
+                ], 'accuracy'),
+                class: 'form-select',
+                id: 'metric-select' %>
+          </div>
+          <div class="col-md-6">
+            <p class="mt-2 text-muted fw-light" id="date-range-text"></p>
+          </div>
+        </div>
+        
+        <%= column_chart(
+          {},
+          height: "500px",
+          id: "metrics-chart"
+        ) %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title">Today</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title">Workout Days</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title">Recent Workouts</h2>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const daysSelect = document.getElementById('days-range-select');
+  const metricSelect = document.getElementById('metric-select');
+  const dateRangeText = document.getElementById('date-range-text');
+
+  updateChart();
+  
+  function updateDateRangeText() {
+    const days = parseInt(daysSelect.value);
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    const options = { month: 'short', day: 'numeric' };
+    const startFormatted = startDate.toLocaleDateString('en-US', options);
+    const endFormatted = endDate.toLocaleDateString('en-US', options);
+    
+    dateRangeText.textContent = `Showing data from ${startFormatted} to ${endFormatted}`;
+  }
+  
+  function updateChart() {
+    const days = daysSelect.value || 7;
+    const metric = metricSelect.value || 'accuracy';
+    
+    updateDateRangeText();
+    
+    fetch(`/supernatural/chart_data?days=${days}&metric=${metric}`)
+      .then(response => response.json())
+      .then(data => {
+        const chart = Chartkick.charts["metrics-chart"];
+        chart.updateData(data);
+      });
+  }
+  
+  daysSelect.addEventListener('change', updateChart);
+  metricSelect.addEventListener('change', updateChart);
+  
+  // Initialize date range text on page load
+  updateDateRangeText();
+
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  fetch('/set_timezone', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content
+    },
+    body: JSON.stringify({ timezone: timezone })
+  });
+});
+</script>

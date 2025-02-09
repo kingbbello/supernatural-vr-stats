@@ -11,4 +11,8 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "supernatural#index"
+
+  get 'supernatural/chart_data', to: 'supernatural#chart_data'
+
+  post 'set_timezone', to: 'application#set_timezone'
 end
