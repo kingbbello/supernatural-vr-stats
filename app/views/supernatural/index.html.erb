@@ -1,7 +1,12 @@
-<h1>Supernatural Stats</h1>
-<%= line_chart [
-  {name: "Accuracy", data: @sorted_workouts.transform_values { |v| v[:accuracy_percentage].to_f }, min: @min_percentage},
-  {name: "Power", data: @sorted_workouts.transform_values { |v| v[:power_percentage].to_f }, min: @min_percentage},
-  {name: "Total Time (minutes)", data: @sorted_workouts.transform_values { |v| v[:total_time] / (1000.0 * 60.0) }, min: @min_time}
-], height: "500px" %>
+
+<div class="container mt-2">
+  <div class="row">
+    <h1>Supernatural Stats</h1>
+    <%= line_chart [
+      {name: "Accuracy", data: @sorted_workouts.transform_values { |v| v[:accuracy_percentage].to_f }, min: @min_percentage},
+      {name: "Power", data: @sorted_workouts.transform_values { |v| v[:power_percentage].to_f }, min: @min_percentage},
+      {name: "Total Time (minutes)", data: @sorted_workouts.transform_values { |v| v[:total_time] / (1000.0 * 60.0) }, min: @min_time}
+    ], height: "500px" %>
+  </div>
+</div>
 

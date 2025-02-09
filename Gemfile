@@ -66,3 +66,6 @@ gem "httparty"
 gem "http"
 
 gem "chartkick"
+gem 'bootstrap', '~> 5.3.3'
+gem "dartsass-rails"
+gem 'jquery-rails'
