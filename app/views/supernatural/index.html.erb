@@ -15,12 +15,25 @@
                 options_for_select([
                   ['Accuracy', 'accuracy'],
                   ['Power', 'power'],
-                  ['Total Time', 'time']
+                  ['Total Time (min)', 'time'],
+                  ['Workouts', 'workouts'],
+                  ['Speed (hits/sec)', 'speed'],
+                  ['Total Hits', 'hits']
                 ], 'accuracy'),
                 class: 'form-select',
                 id: 'metric-select' %>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3">
+            <%= select_tag :workout_type, 
+                options_for_select([
+                  ['All Workouts', 'all'],
+                  ['Flow', 'flow'],
+                  ['Boxing', 'boxing']
+                ], 'all'),
+                class: 'form-select',
+                id: 'workout-type-select' %>
+          </div>
+          <div class="col-md-3">
             <p class="mt-2 text-muted fw-light" id="date-range-text"></p>
           </div>
         </div>
@@ -65,6 +78,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   const daysSelect = document.getElementById('days-range-select');
   const metricSelect = document.getElementById('metric-select');
+  const workoutTypeSelect = document.getElementById('workout-type-select');
   const dateRangeText = document.getElementById('date-range-text');
 
   updateChart();
@@ -85,10 +99,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateChart() {
     const days = daysSelect.value || 7;
     const metric = metricSelect.value || 'accuracy';
+    const workoutType = workoutTypeSelect.value || 'all';
     
     updateDateRangeText();
     
-    fetch(`/supernatural/chart_data?days=${days}&metric=${metric}`)
+    fetch(`/supernatural/chart_data?days=${days}&metric=${metric}&workout_type=${workoutType}`)
       .then(response => response.json())
       .then(data => {
         const chart = Chartkick.charts["metrics-chart"];
@@ -98,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   daysSelect.addEventListener('change', updateChart);
   metricSelect.addEventListener('change', updateChart);
+  workoutTypeSelect.addEventListener('change', updateChart);
   
   // Initialize date range text on page load
   updateDateRangeText();

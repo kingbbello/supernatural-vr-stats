@@ -15,19 +15,29 @@ class SupernaturalController < ApplicationController
   def chart_data
     days = params[:days].to_i 
     metric = params[:metric]
+    workout_type = params[:workout_type]&.downcase || 'all'
     
     service = SupernaturalApiService.new
     feed = service.fetch_all_data
-    puts "feed: #{feed.first["body"]["closed_at"]}"
-    puts "converted: #{Time.zone.parse(feed.first["body"]["closed_at"])}"
 
     sorted_workouts = feed.each_with_object({}) do |workout, hash|
+      # Convert 'flow' parameter to 'classic' to match API response
+      api_workout_type = case workout_type
+                        when 'flow' then 'classic'
+                        else workout_type
+                        end
+      
+      # Skip workouts that don't match the selected type
+      next if api_workout_type != 'all' && 
+              workout["body"]["workout_type"] != api_workout_type
+      
       # Convert to application timezone before formatting
       date = Time.zone.parse(workout["body"]["closed_at"]).strftime("%Y-%m-%d")
       accuracy = workout["body"]["accuracy_percentage_str"]
       power = workout["body"]["total_power_percentage_str"]
       total_time = workout["body"]["total_time"].to_f
-      total_hits = workout["body"]["total_hits"].to_i
+      total_hits = workout["body"]["total_power_hits"].to_i
+      avg_velocity = workout["body"]["avg_hit_vel"].to_f
       
       next if power.nil? || power.empty? || power == "0"
       
@@ -37,14 +47,22 @@ class SupernaturalController < ApplicationController
         power_percentage: 0.0,
         total_time: 0.0,
         workout_count: 0,
-        total_hits: 0
+        total_hits: 0,
+        avg_velocity: 0.0,
+        velocity_sum: 0.0,
+        accuracy_sum: 0.0,
+        power_sum: 0.0
       }
       
-      hash[date][:accuracy_percentage] = accuracy.to_f
-      hash[date][:power_percentage] = power.to_f
-      hash[date][:total_time] += total_time
       hash[date][:workout_count] += 1
+      hash[date][:accuracy_sum] += accuracy.to_f
+      hash[date][:power_sum] += power.to_f
+      hash[date][:accuracy_percentage] = hash[date][:accuracy_sum] / hash[date][:workout_count]
+      hash[date][:power_percentage] = hash[date][:power_sum] / hash[date][:workout_count]
+      hash[date][:total_time] += total_time
       hash[date][:total_hits] += total_hits
+      hash[date][:velocity_sum] += avg_velocity
+      hash[date][:avg_velocity] = hash[date][:velocity_sum] / hash[date][:workout_count]
     end
 
     filtered_workouts = sorted_workouts
@@ -62,7 +80,7 @@ class SupernaturalController < ApplicationController
     when 'workouts'
       filtered_workouts.transform_values { |v| v[:workout_count] }
     when 'speed'
-      filtered_workouts.transform_values { |v| v[:total_hits] / (v[:total_time] / 1000.0) } # hits per second
+      filtered_workouts.transform_values { |v| v[:avg_velocity] }
     when 'hits'
       filtered_workouts.transform_values { |v| v[:total_hits] }
     end
